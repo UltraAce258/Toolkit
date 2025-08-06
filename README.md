@@ -349,7 +349,17 @@ python main.py
 ```
 
 If everything is correct, you should see the main interface of the "UltraAce Toolkit".
+  
+#### **Alternative: Run with an IDE (e.g., VS Code)**
 
+If you prefer using a code editor, this is also a highly recommended method:
+
+1.  In your IDE, select **"Open Folder"** and open the entire workspace folder containing `main.py`.
+2.  In the IDE's file explorer, click to open the `main.py` file.
+3.  **Crucial Step**: Find and click the "Run" button. Make sure you select the option **"Run Python File"** or **"Debug Python File"**.
+
+> **Warning**: Do not use the "Run Code" feature, as it may fail to launch the GUI correctly. In VS Code, this typically refers to the green triangular "play" button in the top-right corner.
+  
 ### Step 4: Execute Your First Task
 
 1.  **Select a Script**: In the "Available Scripts" list on the left side of the program window, click on a script you want to run (e.g., "Document Page Counter").
@@ -361,15 +371,7 @@ Congratulations! You have successfully used the UltraAce Toolkit.
 
 ---
 
-#### **Alternative: Run with an IDE (e.g., VS Code)**
 
-If you prefer using a code editor, this is also a highly recommended method:
-
-1.  In your IDE, select **"Open Folder"** and open the entire workspace folder containing `main.py`.
-2.  In the IDE's file explorer, click to open the `main.py` file.
-3.  **Crucial Step**: Find and click the "Run" button. Make sure you select the option **"Run Python File"** or **"Debug Python File"**.
-
-> **Warning**: Do not use the "Run Code" feature, as it may fail to launch the GUI correctly. In VS Code, this typically refers to the green triangular "play" button in the top-right corner.
   
 ## 🔧 Detailed GUI Usage and Configuration
 
