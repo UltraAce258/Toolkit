@@ -894,50 +894,62 @@ class ScriptGUI(QMainWindow):
     def _parse_script_for_params(self, script_path):
         """
         Runs the script with '--help' to capture and parse its argparse parameters.
+        This version uses a robust regex to differentiate between flags, value inputs, and choices
+        based on the presence of a metavar or a choice list.
         使用'--help'运行脚本以捕获并解析其argparse参数。
+        此版本使用健壮的正则表达式，根据元变量或选项列表的存在来区分标志、值输入和选项。
         """
         params = []
         try:
-            # Execute 'python script.py --help' to get the help text
-            # 执行 'python script.py --help' 来获取帮助文本
             result = subprocess.run(
                 [sys.executable, script_path, '--help'], 
                 capture_output=True, text=True, encoding='utf-8', errors='replace'
             )
             help_text = result.stdout
             
-            # A regex to find lines defining argparse arguments
-            # 一个用于查找定义argparse参数的行的正则表达式
+            # This new regex is designed to capture the key parts of an argparse argument definition.
+            # 这个新正则表达式旨在捕获argparse参数定义的关键部分。
+            # Group 1: Optional short flag (e.g., '-v, ')
+            # Group 2: The long flag name (e.g., 'verbose')
+            # Group 3: Optional metavar, indicating a value is expected (e.g., 'GROUP_SIZE')
+            # Group 4: Optional choices list (e.g., 'name,date')
+            # Group 5: Optional default value
             pattern = re.compile(
-                r"^\s+(-[a-zA-Z],\s+)?--([a-zA-Z0-9_-]+)\s*(?:METAVAR|\{([^}]+)\})?.*?(?:\(default:\s*([^)]+)\))?",
-                re.MULTILINE
+                r"^\s+(-[a-zA-Z],\s+)?--([a-zA-Z0-9_-]+)\s*([A-Z_]+)?.*?(?:\{([^}]+)\})?.*?(?:\(default:\s*([^)]+)\))?",
+                re.MULTILINE | re.IGNORECASE
             )
+
             for match in pattern.finditer(help_text):
                 name = f"--{match.group(2)}"
-                # Ignore the --gui-mode flag as it's for internal use
-                # 忽略--gui-mode标志，因为它供内部使用
-                if name == '--gui-mode': continue
+                # Ignore internal flags
+                # 忽略内部标志
+                if name in ['--gui-mode', '--lang']: continue
 
-                has_choices = bool(match.group(3))
-                has_default = bool(match.group(4))
-                
+                metavar = match.group(3)
+                choices = match.group(4)
+                default_val = match.group(5)
+
                 param_info = {'name': name}
-                if has_choices:
-                    # Argument with a list of choices (e.g., --mode {merge,en,zh})
-                    # 带有选项列表的参数（例如 --mode {merge,en,zh}）
+
+                # The logic is now hierarchical and robust:
+                # 现在的逻辑是分层且健壮的：
+                if choices:
+                    # If it has choices, it's a ComboBox.
+                    # 如果有选项，它就是下拉框。
                     param_info['type'] = 'choice'
-                    param_info['choices'] = [c.strip() for c in match.group(3).split(',')]
-                elif has_default:
-                    # Argument with a default value, treat as a text input
-                    # 带有默认值的参数，视为文本输入
+                    param_info['choices'] = [c.strip() for c in choices.split(',')]
+                elif metavar:
+                    # If it has a metavar but no choices, it's a LineEdit (value input).
+                    # 如果有元变量但没有选项，它就是输入框（值输入）。
                     param_info['type'] = 'value'
                 else:
-                    # Argument without a default value, treat as a boolean flag
-                    # 没有默认值的参数，视为布尔标志
+                    # Otherwise, it's a CheckBox (flag).
+                    # 否则，它就是复选框（标志）。
                     param_info['type'] = 'flag'
                 
-                if has_default:
-                    param_info['default'] = match.group(4).strip()
+                if default_val:
+                    param_info['default'] = default_val.strip()
+                
                 params.append(param_info)
 
         except Exception as e:
@@ -958,57 +970,87 @@ class ScriptGUI(QMainWindow):
 
     def _update_dynamic_params_ui(self, params):
         """
-        Creates and displays UI widgets (checkboxes, comboboxes, etc.) based on parsed parameters.
-        根据解析出的参数创建并显示UI小部件（复选框、下拉框等）。
+        Creates and displays UI widgets based on parsed parameters.
+        This version now supports internationalized display names for choices
+        by parsing a special format in the help string: [display: value=zh_name,en_name].
+        根据解析出的参数创建并显示UI小部件。
+        此版本现在通过解析帮助字符串中的特殊格式 [display: value=zh_name,en_name] 来支持选项的国际化显示名称。
         """
         self._clear_dynamic_params_ui()
         if not params: return
 
         params.sort(key=lambda x: x['name'])
 
-        # Arrange widgets in a grid, max 3 rows before starting a new column
-        # 将小部件排列在网格中，最多3行后开始新的一列
         row, col, max_rows = 0, 0, 3
         for param in params:
             name = param['name']
             p_type = param.get('type', 'flag')
             p_default = param.get('default')
+            # (NEW) Get the full help text for parsing display names.
+            # (新) 获取完整的帮助文本以解析显示名称。
+            p_help = param.get('help', '')
 
             widget = None
             if p_type == 'choice':
                 label = QLabel(f"{name}:")
                 combo = QComboBox()
-                combo.addItems(param['choices'])
-                if p_default and p_default in param['choices']:
-                    combo.setCurrentText(p_default)
+                
+                # (NEW) Logic to parse display names from help text.
+                # (新) 从帮助文本中解析显示名称的逻辑。
+                display_map = {}
+                display_match = re.search(r'\[display:\s*(.*?)\]', p_help)
+                if display_match:
+                    # e.g., "asc=升序,Ascending | desc=降序,Descending"
+                    entries = display_match.group(1).split('|')
+                    for entry in entries:
+                        try:
+                            value, names = entry.split('=', 1)
+                            zh_name, en_name = names.split(',', 1)
+                            display_map[value.strip()] = {'zh': zh_name.strip(), 'en': en_name.strip()}
+                        except ValueError:
+                            continue # Ignore malformed entries
+
+                # Populate the ComboBox
+                for choice_value in param['choices']:
+                    display_name = choice_value # Default to the internal value
+                    if choice_value in display_map:
+                        display_name = display_map[choice_value].get(self.current_lang, choice_value)
+                    
+                    # Add the display name to the UI, but store the internal value in UserRole.
+                    # 将显示名称添加到UI，但将内部值存储在UserRole中。
+                    combo.addItem(display_name, userData=choice_value)
+
+                # Set the default value based on the internal value, not the display name.
+                # 根据内部值而不是显示名称来设置默认值。
+                if p_default:
+                    index = combo.findData(p_default)
+                    if index != -1:
+                        combo.setCurrentIndex(index)
+
                 widget = combo
                 self.dynamic_params_layout.addWidget(label, row, col * 2)
                 self.dynamic_params_layout.addWidget(widget, row, col * 2 + 1)
+
             elif p_type == 'value':
                 label = QLabel(f"{name}:")
                 line_edit = QLineEdit()
-                if p_default:
-                    line_edit.setText(p_default)
+                if p_default: line_edit.setText(p_default)
                 widget = line_edit
                 self.dynamic_params_layout.addWidget(label, row, col * 2)
                 self.dynamic_params_layout.addWidget(widget, row, col * 2 + 1)
+            
             else: # 'flag' type
                 checkbox = QCheckBox(name)
-                if p_default:
-                    checkbox.setChecked(True)
+                if p_default: checkbox.setChecked(True)
                 widget = checkbox
-                # Span the checkbox across two columns for better layout
-                # 将复选框横跨两列以获得更好的布局
                 self.dynamic_params_layout.addWidget(widget, row, col * 2, 1, 2)
 
             if widget:
-                # Store parameter info in the widget's properties for later retrieval
-                # 将参数信息存储在小部件的属性中以供后续检索
+                widget.setToolTip(p_help.split('[display:')[0].strip()) # Use help text before our tag as tooltip
                 widget.setProperty('param_name', name)
                 widget.setProperty('param_type', p_type)
                 self.dynamic_param_widgets.append(widget)
 
-            # Grid layout logic / 网格布局逻辑
             row += 1
             if row >= max_rows:
                 row = 0
@@ -1377,7 +1419,10 @@ class ScriptGUI(QMainWindow):
             if p_type == 'flag' and widget.isChecked():
                 arguments.append(p_name)
             elif p_type == 'choice':
-                arguments.extend([p_name, widget.currentText()])
+                # (MODIFIED) Get the internal value from userData.
+                # (已修改) 从userData获取内部值。
+                internal_value = widget.currentData()
+                arguments.extend([p_name, internal_value])
             elif p_type == 'value':
                 value = widget.text()
                 if value: arguments.extend([p_name, value])
