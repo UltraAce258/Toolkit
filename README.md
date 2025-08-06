@@ -27,7 +27,7 @@
 
 **请注意，本工具箱目前处于早期的Alpha开发阶段。**
 
-这意味着它可能包含未知的错误（Bug），且部分功能尚不完善。我们非常欢迎并感谢您通过GitHub Issues提交错误报告、提出功能建议或分享您的使用体验。您的反馈对项目的成长至关重要！
+这意味着它可能包含未知的错误（Bug），且部分功能尚不完善。我们非常欢迎并感谢您通过GitHub Issues提交错误报告、提出功能建议，或通过Pull Request直接贡献代码。您的任何反馈与贡献都对项目的成长至关重要！
 
 ## 🚀 快速上手指南
 
@@ -74,7 +74,16 @@ python main.py
 ```
 
 如果一切顺利，你应该能看到“奥创王牌工具箱”的主界面了。
+#### **方法二：使用IDE（如 VS Code）运行**
 
+如果你更习惯使用代码编辑器，这也是一个非常推荐的方式：
+
+1.  在你的IDE中，选择 **“打开文件夹”**，然后打开包含`main.py`的整个工作区文件夹。
+2.  在IDE的文件浏览器中，单击打开`main.py`文件。
+3.  **关键步骤**: 找到并点击IDE的“运行”按钮。请务必选择 **“运行Python文件”** 或 **“以Python文件形式调试”** 选项。
+
+> **警告**: 不要使用“运行选定代码”(Run Code)功能，因为它可能无法正确启动GUI。在VS Code中，这通常指右上角的绿色三角形“播放”按钮。
+  
 ### 第四步：执行你的第一个任务
 
 1.  **选择脚本**: 在程序窗口左侧的“可用脚本”列表中，点击一个你想运行的脚本（例如“文档页数统计器”）。
@@ -293,7 +302,7 @@ Its core philosophy is **"Write once, run anywhere, for everyone."**
 
 **Please note that this toolkit is currently in an early Alpha development stage.**
 
-This means it may contain unknown bugs, and some features might be incomplete. We warmly welcome and appreciate you submitting bug reports, suggesting features, or sharing your user experience via GitHub Issues. Your feedback is crucial for the project's growth!
+This means it may contain unknown bugs, and some features might be incomplete. We warmly welcome and appreciate you submitting bug reports or suggesting features via GitHub Issues, or contributing code directly through Pull Requests. Your feedback and contributions are crucial for the project's growth!
 
 ## 🚀 Quick Start Guide
 
@@ -350,6 +359,18 @@ If everything is correct, you should see the main interface of the "UltraAce Too
 
 Congratulations! You have successfully used the UltraAce Toolkit.
 
+---
+
+#### **Alternative: Run with an IDE (e.g., VS Code)**
+
+If you prefer using a code editor, this is also a highly recommended method:
+
+1.  In your IDE, select **"Open Folder"** and open the entire workspace folder containing `main.py`.
+2.  In the IDE's file explorer, click to open the `main.py` file.
+3.  **Crucial Step**: Find and click the "Run" button. Make sure you select the option **"Run Python File"** or **"Debug Python File"**.
+
+> **Warning**: Do not use the "Run Code" feature, as it may fail to launch the GUI correctly. In VS Code, this typically refers to the green triangular "play" button in the top-right corner.
+  
 ## 🔧 Detailed GUI Usage and Configuration
 
 Every feature of the toolkit is designed to enhance your efficiency. Understanding them will make you even more productive.
