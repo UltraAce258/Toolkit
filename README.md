@@ -209,13 +209,16 @@ parser.add_argument('files', nargs='*', help="由GUI传入的文件/文件夹路
 
 # --- 自定义可视化参数 (示例) ---
 # 示例1: 生成一个复选框 (Checkbox)
-parser.add_argument('-v', '--verbose', action='store_true', help="开启后会输出更详细的日志。")
+# 对于开关类型的选项，使用 action='store_true'
+parser.add_argument('--recursive', action='store_true', help="勾选后将搜索所有子文件夹。\nSearch all subfolders if checked.")
 
 # 示例2: 生成一个下拉选择菜单 (ComboBox)
-parser.add_argument('--mode', type=str, choices=['fast', 'quality', 'balance'], default='balance', help="选择处理模式。")
+# 定义 choices 列表即可生成下拉菜单
+parser.add_argument('--mode', type=str, choices=['fast', 'quality', 'balance'], default='balance', help="选择处理模式。\nSelect processing mode.")
 
 # 示例3: 生成一个文本输入框 (LineEdit)
-parser.add_argument('--output-name', type=str, default='output', help="指定输出文件的前缀名。")
+# 定义类型 (如 str, int) 但不提供 choices，即可生成输入框
+parser.add_argument('--group-size', type=int, default=3, help="每组包含的文件数量 (0 = 合并全部)\nNumber of files per group (0 = merge all).")
 
 # --- 解析参数 ---
 args = parser.parse_args()
@@ -237,6 +240,7 @@ print(f"要处理的文件列表是: {args.files}")
 ## 🗺️ 蓝图与未来计划
 
 *   **功能完善**: 修复所有已知问题，包括动态主题切换。
+*   **参数国际化**: 实现下拉菜单等可视化参数的选项根据GUI语言动态显示中文或英文。
 *   **应用打包**: 在项目进入Beta或稳定版后，我们会将其打包为Windows (`.exe`)、macOS (`.app`) 等平台的可执行文件，实现真正的开箱即用，无需手动安装Python环境。
 
 ## ❓ 常见问题与故障排查 (FAQ)
@@ -244,6 +248,9 @@ print(f"要处理的文件列表是: {args.files}")
 **Q: 暗色/亮色模式切换似乎不工作？**
 
 A: 这是一个已知问题。目前，主题功能的工作方式如下：“跟随系统”选项可以在程序启动时正确应用您当前的系统主题（亮色或暗色）。但是，如果您在程序运行时切换系统主题，本工具需要**重启**才能应用新主题。直接点击“浅色模式”或“深色模式”按钮可能无法立即生效。我们正在努力在未来的版本中修复此问题。
+
+**Q: 手动参数的格式是什么？`--name value` 还是 `--name=value`？**
+A: **两种都支持，但我们推荐使用`--name value`（空格分隔）**。这是最通用、最标准的命令行格式。
 
 **Q: 我启动`main.py`时，程序闪退，并提示DLL加载失败，该怎么办？**
 
@@ -488,15 +495,19 @@ parser.add_argument('--gui-mode', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('files', nargs='*', help="List of file/folder paths passed in by the GUI.")
 
 # --- Custom Visual Parameters (Examples) ---
+# --- Custom Visual Parameters (Examples) ---
 # Example 1: Generates a Checkbox
-parser.add_argument('-v', '--verbose', action='store_true', help="Enable for more detailed logging.")
+# For on/off options, use action='store_true'.
+parser.add_argument('--recursive', action='store_true', help="Search all subfolders if checked.")
 
 # Example 2: Generates a ComboBox (dropdown menu)
+# Defining a 'choices' list will generate a dropdown menu.
 parser.add_argument('--mode', type=str, choices=['fast', 'quality', 'balance'], default='balance', help="Select the processing mode.")
 
 # Example 3: Generates a LineEdit (text input box)
-parser.add_argument('--output-name', type=str, default='output', help="Specify the prefix for the output file.")
-
+# Defining a type (like str or int) without 'choices' will generate an input box.
+parser.add_argument('--group-size', type=int, default=3, help="Number of files per group (0 = merge all).")
+  
 # --- Parse Arguments ---
 args = parser.parse_args()
 
@@ -517,6 +528,7 @@ print(f"The list of files to process is: {args.files}")
 ## 🗺️ Roadmap & Future Plans
 
 *   **Feature Completion**: Fix all known issues, including dynamic theme switching.
+*   **Parameter Internationalization**: Implement the ability for visual parameter options (like dropdowns) to dynamically display Chinese or English based on the GUI language.
 *   **Application Packaging**: Once the project reaches a Beta or stable version, we will package it into executable files for Windows (`.exe`), macOS (`.app`), etc., to provide a true out-of-the-box experience without needing a manual Python environment setup.
 
 ## ❓ FAQ & Troubleshooting
@@ -524,6 +536,9 @@ print(f"The list of files to process is: {args.files}")
 **Q: The dark/light mode toggle doesn't seem to work?**
 
 A: This is a known issue. Currently, the theme functionality works as follows: The "Follow System" option correctly applies your current system theme (light or dark) upon application startup. However, if you change your system theme while the application is running, the toolkit needs to be **restarted** to apply the new theme. Directly clicking the "Light Mode" or "Dark Mode" buttons may not work as expected. We are working on fixing this in a future release.
+
+**Q: What is the format for manual parameters? `--name value` or `--name=value`?**
+A: **Both are supported, but we recommend using `--name value` (space-separated)**. This is the most common and standard command-line format.
 
 **Q: When I run `main.py`, the program crashes with a DLL loading error. What should I do?**
 
