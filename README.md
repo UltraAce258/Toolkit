@@ -127,12 +127,13 @@ python main.py
 *   **可视化参数**: 当你选择一个脚本后，这里会自动出现为该脚本定制的配置选项。你无需知道它们背后对应的命令行参数是什么，只需像填写问卷一样操作即可。
 *   **手动参数**: 如果你需要输入一些临时的、或者脚本并未提供可视化界面的高级参数，可以在这里手动填写。格式与标准命令行完全一致（例如 `-v --output "my file.txt"`）。
 
-#### 输出区域
+#### 过程与结果
 
+*   **进度条**: 当执行一个支持进度报告的脚本时，一个可视化的进度条会自动出现在“执行”按钮下方。它会实时显示任务的完成度、百分比和当前正在进行的操作，让你对耗时任务的状况了如指掌。
 *   **标准输出**: 一个简洁的、只显示脚本最终输出的文本框。
 *   **增强型终端**:
-    *   **实时日志**: 完整显示脚本执行的每一步，包括依赖安装、调试信息等。
-    *   **交互式输入**: 如果脚本在运行过程中需要你输入“yes/no”之类的确认信息，你可以在终端下方的输入行中输入并按回车。
+    *   **实时日志**: 完整显示脚本执行的每一步，包括依赖安装、调试信息等。所有非进度的输出都会在这里清晰记录，便于追溯。
+    *   **交互式输入**: 如果脚本在运行过程中需要你输入任何信息（如确认“yes/no”、输入密码等），你都可以在终端下方的输入行中输入并按回车。**即使是直接按回车（空输入），也会被正确传递给脚本**。
     *   **系统命令**: 当没有脚本在执行时，这里就是一个标准的系统终端。你可以使用`cd`, `ls`, `dir`, `pip`等常用命令。输入`exit`可关闭程序。
 
 ### 菜单栏配置
@@ -236,6 +237,24 @@ print(f"要处理的文件列表是: {args.files}")
 1.  **自给自足**: 如果你的脚本依赖第三方库（如`requests`, `numpy`），请在脚本内部实现自动检查和安装。这能极大地方便用户。
 2.  **提供国际化输出**: 对于所有`print()`到控制台的信息，请根据`args.lang`参数的值来决定显示中文还是英文。
 3.  **拥抱标准输入输出**: 使用`print()`来输出信息，使用`input()`来接收用户的交互式输入。GUI会为你处理好这一切。
+4.  **提供可视化进度（新！）**: 对于耗时较长的任务，你可以通过打印一种特殊格式的字符串来驱动GUI的进度条，这能极大地提升用户体验，同时保持你的控制台日志干净整洁。
+    *   **协议格式**:
+        `[PROGRESS] <current_value> / <max_value> | <description_text>`
+    *   **数据类型**: `<current_value>` 和 `<max_value>` 均可以是 **整数或浮点数**。GUI会自动处理数值转换和映射。
+    *   **示例**:
+        ```python
+        total_files = 50
+        for i, file in enumerate(files_to_process):
+            # ... 这里是你的文件处理逻辑 ...
+            
+            # 发送进度指令
+            # GUI会看到这行输出，并更新进度条，但不会在终端中打印它
+            print(f"[PROGRESS] {i + 1} / {total_files} | 正在处理 {file.name}...", flush=True)
+
+        # 任务结束时，可以发送一个100%的指令
+        print(f"[PROGRESS] {total_files} / {total_files} | 全部处理完成！", flush=True)
+        ```
+    *   **重要提示**: 任何以`[PROGRESS]`开头的打印输出都将被GUI**拦截**并用于更新进度条，**不会显示**在终端日志中。所有其他`print`输出则会照常显示。请务必在进度`print`语句中加入`flush=True`，以保证进度信息被立即发送。
 
 ## 🗺️ 蓝图与未来计划
 
@@ -414,12 +433,13 @@ Every feature of the toolkit is designed to enhance your efficiency. Understandi
 *   **Visual Parameters**: When you select a script, custom configuration options for that script will automatically appear here. You don't need to know the underlying command-line arguments; just fill it out like a form.
 *   **Manual Parameters**: If you need to input temporary or advanced parameters that don't have a visual interface, you can type them here. The format is identical to the standard command line (e.g., `-v --output "my file.txt"`).
 
-#### Output Area
+#### Process and Results
 
+*   **Progress Bar**: When running a script that supports progress reporting, a visual progress bar will automatically appear below the "Run" button. It shows the task's completion percentage and a description of the current operation in real-time, keeping you informed about long-running tasks.
 *   **Standard Output**: A simple text box that displays only the final output of the script.
 *   **Enhanced Terminal**:
-    *   **Real-time Logs**: Shows every step of the script's execution, including dependency installation, debug info, etc.
-    *   **Interactive Input**: If a script requires user input during execution (like "yes/no"), you can type in the input line at the bottom of the terminal and press Enter.
+    *   **Real-time Logs**: Shows every step of the script's execution, including dependency installation and debug info. All non-progress output is clearly logged here for traceability.
+    *   **Interactive Input**: If a script requires any input during execution (like a "yes/no" confirmation or a password), you can type it in the input line at the bottom of the terminal and press Enter. **Even an empty Enter press is correctly passed to the script**.
     *   **System Commands**: When no script is running, this acts as a standard system terminal. You can use common commands like `cd`, `ls`, `dir`, `pip`, etc. Type `exit` to close the program.
 
 ### Menu Bar Configuration
@@ -524,6 +544,24 @@ print(f"The list of files to process is: {args.files}")
 1.  **Be Self-Sufficient**: If your script depends on third-party libraries (like `requests`, `numpy`), implement logic to automatically check and install them. Users will love this feature.
 2.  **Provide Internationalized Output**: For all information printed to the console (`print()`), decide whether to display Chinese or English based on the value of `args.lang`.
 3.  **Embrace Standard I/O**: Use `print()` to output information and `input()` to receive interactive user input. The GUI will handle all of this for you.
+4.  **Provide Visual Progress (New!)**: For long-running tasks, you can drive the GUI's progress bar by printing a specially formatted string. This dramatically improves user experience while keeping your console logs clean.
+    *   **Protocol Format**:
+        `[PROGRESS] <current_value> / <max_value> | <description_text>`
+    *   **Data Types**: Both `<current_value>` and `<max_value>` can be **integers or floats**. The GUI will handle the conversion and mapping automatically.
+    *   **Example**:
+        ```python
+        total_files = 50
+        for i, file in enumerate(files_to_process):
+            # ... your file processing logic here ...
+            
+            # Send a progress command
+            # The GUI will see this, update the progress bar, but not print it in the terminal
+            print(f"[PROGRESS] {i + 1} / {total_files} | Processing {file.name}...", flush=True)
+
+        # At the end of the task, you can send a 100% command
+        print(f"[PROGRESS] {total_files} / {total_files} | All files processed!", flush=True)
+        ```
+    *   **Important**: Any line printed to stdout that starts with `[PROGRESS]` will be **intercepted** by the GUI to update the progress bar and will **not be displayed** in the terminal log. All other `print` outputs will appear as usual. Be sure to include `flush=True` in your progress `print` statements to ensure the information is sent immediately.
 
 ## 🗺️ Roadmap & Future Plans
 
@@ -569,4 +607,4 @@ When the script reaches this point, the GUI's "Enhanced Terminal" will automatic
 
 ---
 
-*Documentation last updated: 2025-08-06. Authored by @UltraAce258, written with Copilot.*
+*Documentation last updated: 2025-08-11. Authored by @UltraAce258, written with Copilot.*
