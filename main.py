@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QHBoxLayout, QListWidget, QTextEdit, QLabel,
                             QSplitter, QFileDialog, QPushButton, QMessageBox, QMenu,
                             QListWidgetItem, QTabWidget, QLineEdit, QCheckBox,
-                            QFormLayout, QComboBox, QFrame, QGridLayout)
+                            QFormLayout, QComboBox, QFrame, QGridLayout, QProgressBar)
 from PyQt6.QtCore import Qt, QProcess, pyqtSignal, QThread
 from PyQt6.QtGui import (QFont, QTextCursor, QKeyEvent, QAction, QKeySequence, 
                          QPalette, QActionGroup, QColor)
@@ -123,6 +123,8 @@ class ScriptExecutor(QThread):
     """
     # Signal to send script output back to the main thread / 将脚本输出发送回主线程的信号
     output_updated = pyqtSignal(str)
+    # Signal to notify the main thread when the process is updated / 进程更新时通知主线程的信号
+    progress_updated = pyqtSignal(float, float, str)
     # Signal to notify the main thread when the process is finished / 进程结束时通知主线程的信号
     process_finished = pyqtSignal(int)
 
@@ -171,23 +173,39 @@ class ScriptExecutor(QThread):
             self.output_updated.emit(f"Error executing command: {e}\n")
             self.process_finished.emit(1) # Emit failure signal / 发出失败信号
 
+    # +++ 全新版本：支持解析浮点数进度 +++
     def _handle_output(self):
         """
-        Reads and decodes output from the running process.
-        读取并解码来自正在运行的进程的输出。
+        Reads output and intelligently routes it, now parsing progress values as floats.
+        读取输出并智能分发，现在将进度值解析为浮点数。
         """
         if not self.process: return
-        output = self.process.readAllStandardOutput().data()
+        data = self.process.readAllStandardOutput().data()
         try:
-            # Try decoding with UTF-8 first, as it's the most common
-            # 首先尝试使用UTF-8解码，因为它是最常见的
-            decoded_output = output.decode('utf-8')
+            decoded_text = data.decode('utf-8')
         except UnicodeDecodeError:
-            # Fallback to the OS-specific encoding if UTF-8 fails
-            # 如果UTF-8解码失败，则回退到特定于操作系统的编码
-            decoded_output = output.decode(self.output_encoding, errors='replace')
-        self.output_updated.emit(decoded_output)
+            decoded_text = data.decode(self.output_encoding, errors='replace')
 
+        for line in decoded_text.strip().split('\n'):
+            if not line.strip(): continue
+
+            if line.startswith('[PROGRESS]'):
+                try:
+                    payload = line[len('[PROGRESS]'):].strip()
+                    progress_part, description = payload.split('|', 1)
+                    current_str, max_str = progress_part.split('/', 1)
+                    
+                    # 将字符串解析为浮点数
+                    current = float(current_str.strip())
+                    maximum = float(max_str.strip())
+                    
+                    self.progress_updated.emit(current, maximum, description.strip())
+                except (ValueError, IndexError) as e:
+                    self.output_updated.emit(f"Invalid progress format: {line}\nError: {e}\n")
+            else:
+                self.output_updated.emit(line + '\n')
+            
+                        
     def send_input(self, text):
         """
         Sends input text to the running script (for interactive scripts).
@@ -305,18 +323,29 @@ class EnhancedTerminalWidget(QWidget):
         self.output_display.ensureCursorVisible()
 
 
+    # +++ 用这个全新的、极简的版本，完整替换旧的 _on_command_entered 方法 +++
     def _on_command_entered(self):
         """
-        Handles the event when the user presses Enter in the command input.
-        处理用户在命令输入中按Enter键的事件。
+        Handles the user pressing Enter. It now unconditionally processes the input,
+        even if it's empty, mimicking a real terminal.
+        处理用户按Enter键的事件。现在它会无条件地处理输入，即使是空的，
+        以模仿一个真实的终端。
         """
-        command = self.command_input.text().strip()
-        if command:
-            self.history.append(command)
+        command = self.command_input.text()  # Get the raw text
+
+        # Add to history only if it's a non-empty command
+        # 仅当命令非空时才将其添加到历史记录
+        if command.strip():
+            self.history.append(command.strip())
             self.history_index = len(self.history)
-            self.append_output(f"\n{self.prompt_label.text()} {command}\n")
-            self.command_input.clear()
-            self.command_entered.emit(command)
+        
+        # Always emit the signal with the raw command. The parent will decide what to do.
+        # 始终使用原始命令发出信号。父级将决定如何处理。
+        self.command_entered.emit(command)
+        
+        # Clear the input for the next command
+        # 为下一条命令清空输入
+        self.command_input.clear()
 
     def keyPressEvent(self, event: QKeyEvent):
         """
@@ -362,6 +391,8 @@ class ScriptGUI(QMainWindow):
         self.current_lang = 'zh'
         self.undo_stack, self.redo_stack = [[]], []
         self.dynamic_param_widgets = []
+        self.progress_bar = None
+        self.progress_label = None
         
         self.original_palette = QApplication.instance().palette()
         
@@ -643,6 +674,20 @@ class ScriptGUI(QMainWindow):
         self.run_button.setEnabled(False)
         self.run_button.setStyleSheet("QPushButton { font-weight: bold; font-size: 14pt; padding: 8px; min-height: 40px; }")
         layout.addWidget(self.run_button)
+        # +++ 2. 在“执行按钮”下方，粘贴这段全新的代码来创建进度条UI +++
+        # --- Progress Bar Section / 进度条部分 ---
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.hide()
+
+        self.progress_label = QLabel("...")
+        self.progress_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.progress_label.hide()
+
+        layout.addWidget(self.progress_bar)
+        layout.addWidget(self.progress_label)
         
         # Output tabs / 输出选项卡
         self.output_label = QLabel()
@@ -1375,6 +1420,26 @@ class ScriptGUI(QMainWindow):
         self.console.insertPlainText(text)
         self.console.ensureCursorVisible()
 
+    # +++ 1. 粘贴这个全新的方法 +++
+    # +++ 全新版本：在GUI层处理浮点数到整数的映射 +++
+    def _update_progress_display(self, current_float, max_float, description):
+        """
+        Updates the progress bar by mapping float progress values to an integer scale.
+        通过将浮点进度值映射到整数刻度来更新进度条。
+        """
+        if self.progress_bar.isHidden():
+            self.progress_bar.show()
+            self.progress_label.show()
+        
+        # 为了平滑显示，我们将浮点数乘以100转换为整数
+        # 例如：(2.5 / 41.58) -> (250 / 4158)
+        max_int = int(max_float * 100)
+        current_int = int(current_float * 100)
+        
+        self.progress_bar.setRange(0, max_int)
+        self.progress_bar.setValue(current_int)
+        self.progress_label.setText(description) 
+               
     def _run_script(self):
         """
         Assembles the command and starts the ScriptExecutor thread.
@@ -1443,12 +1508,19 @@ class ScriptGUI(QMainWindow):
         self.run_button.setEnabled(False)
         self.statusBar().showMessage(lang['status_running'])
         self.tabs.setCurrentWidget(self.terminal) # Switch to terminal tab on run / 运行时切换到终端选项卡
+        # +++ 2. 在 _run_script 的末尾，启动线程前，添加以下代码 +++
+        self.progress_bar.hide()
+        self.progress_label.hide()
+        self.progress_bar.setValue(0)
+        self.progress_label.setText("...")
         
         # Create and start the executor thread
         # 创建并启动执行器线程
         self.script_executor = ScriptExecutor(command)
         self.script_executor.output_updated.connect(self._append_to_console) # Also send to simple console / 也发送到简单控制台
         self.script_executor.output_updated.connect(self.terminal.append_output) # Send to enhanced terminal / 发送到增强型终端
+        # +++ 在这里添加这行新的连接 +++
+        self.script_executor.progress_updated.connect(self._update_progress_display)
         self.script_executor.process_finished.connect(self._on_script_finished)
         self.script_executor.start()
 
@@ -1463,6 +1535,8 @@ class ScriptGUI(QMainWindow):
         self.terminal.append_output(msg)
         self.run_button.setEnabled(True)
         self.statusBar().showMessage(lang['status_ready'])
+        self.progress_bar.hide()
+        self.progress_label.hide()
         self.script_executor = None
 
     def _handle_terminal_input(self, text):
@@ -1480,6 +1554,13 @@ class ScriptGUI(QMainWindow):
         Executes a system command in the terminal if no script is running.
         如果没有脚本正在运行，则在终端中执行系统命令。
         """
+            # --- (NEW) Handle empty Enter press when no script is running ---
+        # --- (新) 处理无脚本运行时按下的空Enter ---
+        if not command_str.strip():
+            self.terminal.append_output(f"\n{self.terminal.prompt_label.text()} ")
+            return
+        # --- (End of new logic) ---
+    
         if command_str.lower() == 'exit':
             self.close()
             return
