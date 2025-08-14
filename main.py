@@ -19,7 +19,7 @@ from PyQt6.QtCore import Qt, QProcess, pyqtSignal, QThread
 from PyQt6.QtGui import (QFont, QTextCursor, QKeyEvent, QAction, QKeySequence, 
                          QPalette, QActionGroup, QColor)
 
-# --- Resource Path Function / 资源路径函数 ---
+# Resource Path Function / 资源路径函数 
 def resource_path(relative_path):
     """
     Get absolute path to resource, works for dev and for PyInstaller.
@@ -35,7 +35,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
-# --- Constants / 全局常量 ---
+# Constants / 全局常量 
 # UI text for different languages / 不同语言的界面文本
 UI_TEXTS = {
     'zh': {
@@ -173,7 +173,6 @@ class ScriptExecutor(QThread):
             self.output_updated.emit(f"Error executing command: {e}\n")
             self.process_finished.emit(1) # Emit failure signal / 发出失败信号
 
-    # +++ 全新版本：支持解析浮点数进度 +++
     def _handle_output(self):
         """
         Reads output and intelligently routes it, now parsing progress values as floats.
@@ -233,7 +232,6 @@ class EnhancedTerminalWidget(QWidget):
     """
     # Signal emitted when the user presses Enter in the input line / 用户在输入行中按Enter键时发出的信号
     command_entered = pyqtSignal(str)
-# +++ 在 EnhancedTerminalWidget 类中添加这个全新的方法 +++
     def apply_theme(self):
         """Applies theme-aware stylesheets to terminal widgets."""
         is_dark = self.palette().color(QPalette.ColorRole.Window).lightness() < 128
@@ -310,12 +308,10 @@ class EnhancedTerminalWidget(QWidget):
                 cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
                 cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
                 cursor.removeSelectedText()
-                # --- FIX / 修正 ---
                 # The correct method for a QTextCursor is insertText(), not insertPlainText().
                 # QTextCursor 的正确方法是 insertText()，而不是 insertPlainText()。
                 cursor.insertText(line[:-1])
             else:
-                # --- FIX / 修正 ---
                 # The correct method for a QTextCursor is insertText(), not insertPlainText().
                 # QTextCursor 的正确方法是 insertText()，而不是 insertPlainText()。
                 cursor.insertText(line + '\n')
@@ -323,7 +319,6 @@ class EnhancedTerminalWidget(QWidget):
         self.output_display.ensureCursorVisible()
 
 
-    # +++ 用这个全新的、极简的版本，完整替换旧的 _on_command_entered 方法 +++
     def _on_command_entered(self):
         """
         Handles the user pressing Enter. It now unconditionally processes the input,
@@ -371,7 +366,6 @@ class ScriptGUI(QMainWindow):
     主应用程序窗口。
     """
     
-    # +++ 用这个全新的版本，完整替换旧的 __init__ 方法 +++
     def __init__(self, scripts_dir):
         """
         Initializes the main window and its components.
@@ -379,12 +373,12 @@ class ScriptGUI(QMainWindow):
         """
         super().__init__()
 
-        # --- Configuration Setup / 配置设置 ---
+        # Configuration Setup / 配置设置
         self.config_path = resource_path('config.ini')
         self.config = configparser.ConfigParser()
         self._load_config()
 
-        # --- Instance Variables / 实例变量 ---
+        # Instance Variables / 实例变量
         self.scripts_dir = scripts_dir
         self.current_script_path, self.current_script_docstring = None, ""
         self.script_executor, self.system_process = None, None
@@ -400,13 +394,13 @@ class ScriptGUI(QMainWindow):
         self.dark_theme_action = None
         self.system_theme_action = None
         
-        # --- UI Initialization / UI初始化 ---
+        # UI Initialization / UI初始化
         self._init_ui()
         self._create_actions()
         self.load_scripts()
         self._update_ui_language()
         self._apply_config()
-    # +++ 在 __init__ 方法下方，添加这四个全新的方法 +++
+
     def _load_config(self):
         """Loads settings from config.ini, creating it if it doesn't exist."""
         self.config.read(self.config_path, encoding='utf-8')
@@ -461,9 +455,6 @@ class ScriptGUI(QMainWindow):
             
         self._update_widget_styles()
         
-    # ... _set_theme 方法在这里结束
-
-    # +++ 在这里粘贴这个全新的、最终版本的方法 +++
     def _update_widget_styles(self):
         """
         Re-applies custom stylesheets to all theme-aware widgets.
@@ -502,7 +493,6 @@ class ScriptGUI(QMainWindow):
         # 更新增强型终端的样式
         self.terminal.apply_theme()
 
-    # def _init_ui(self): # 后续方法从这里开始
     def _init_ui(self):
         """
         Initializes the overall UI layout and sub-panels.
@@ -537,10 +527,10 @@ class ScriptGUI(QMainWindow):
         self.menu_bar = self.menuBar()
         lang = UI_TEXTS[self.current_lang]
 
-        # --- Preferences Menu / 偏好设置菜单 ---
+        # Preferences Menu / 偏好设置菜单
         self.prefs_menu = self.menu_bar.addMenu(lang['prefs_menu'])
 
-        # --- Theme Sub-Menu / 主题子菜单 ---
+        # Theme Sub-Menu / 主题子菜单
         self.theme_menu = self.prefs_menu.addMenu(lang['theme_menu'])
         
         theme_group = QActionGroup(self)
@@ -589,12 +579,11 @@ class ScriptGUI(QMainWindow):
         self.script_list = QListWidget()
         self.script_list.setAlternatingRowColors(True)
         self.script_list.itemClicked.connect(self._on_script_selected)
-         # +++ 1. 激活自定义上下文菜单策略 +++
+         # 1. 激活自定义上下文菜单策略
         self.script_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        # +++ 2. 连接信号到我们即将创建的处理器 +++
+        # 2. 连接信号到我们即将创建的处理器
         self.script_list.customContextMenuRequested.connect(self._show_script_context_menu)
-        # +++ 在这里添加下面的代码来修复高亮样式 +++
-        # +++ Add the code below to fix the highlight style +++
+        # 3. 正确处理高亮样式
         self.script_info_label = QLabel()
         self.script_info = QTextEdit()
         self.script_info.setReadOnly(True)
@@ -674,8 +663,7 @@ class ScriptGUI(QMainWindow):
         self.run_button.setEnabled(False)
         self.run_button.setStyleSheet("QPushButton { font-weight: bold; font-size: 14pt; padding: 8px; min-height: 40px; }")
         layout.addWidget(self.run_button)
-        # +++ 2. 在“执行按钮”下方，粘贴这段全新的代码来创建进度条UI +++
-        # --- Progress Bar Section / 进度条部分 ---
+        # Progress Bar Section / 进度条部分
         self.progress_bar = QProgressBar()
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setRange(0, 100)
@@ -822,8 +810,6 @@ class ScriptGUI(QMainWindow):
         # After loading, update the display text for all items based on the current language.
         # 加载后，根据当前语言更新所有项目的显示文本。
         self._update_script_list_display()
-    # +++ 请将这个【完整的、全新的】方法粘贴到 load_scripts 方法之后 +++
-# +++ Please paste this [complete, new] method after the load_scripts method +++
     def _update_script_list_display(self):
         """
         Updates the display text of all items in the script list based on the current UI language.
@@ -837,7 +823,6 @@ class ScriptGUI(QMainWindow):
             if data:
                 display_name = data['name_zh'] if self.current_lang == 'zh' else data['name_en']
                 item.setText(display_name)
-    # +++ 在这里粘贴这个全新的方法 +++
     
     def _show_script_context_menu(self, position):
         """
@@ -881,7 +866,6 @@ class ScriptGUI(QMainWindow):
         # Show the menu at the cursor's global position
         # 在光标的全局位置显示菜单
         context_menu.exec(self.script_list.mapToGlobal(position))  
-    # +++ 在这里粘贴这个全新的方法 +++
     def _open_in_file_explorer(self, path):
         """
         Opens the system's file explorer and highlights the given file.
@@ -913,7 +897,6 @@ class ScriptGUI(QMainWindow):
             # 安全回退：仅打印路径
             QMessageBox.information(self, "File Path", f"Could not open explorer.\nThe file is located at:\n{path}")
 
-# ... 后续方法从这里开始 ...                      
     def _on_script_selected(self, item):
         """
         Handles the event when a script is selected from the list.
@@ -976,8 +959,6 @@ class ScriptGUI(QMainWindow):
 
                 param_info = {'name': name}
 
-                # The logic is now hierarchical and robust:
-                # 现在的逻辑是分层且健壮的：
                 if choices:
                     # If it has choices, it's a ComboBox.
                     # 如果有选项，它就是下拉框。
@@ -1103,8 +1084,6 @@ class ScriptGUI(QMainWindow):
         
         self.dynamic_params_group.setVisible(True)
 
-    # +++ 请用这段全新的代码，完整替换旧的 _update_script_info_display 方法 +++
-    # +++ Please use this new code to completely replace the old _update_script_info_display method +++
     def _update_script_info_display(self):
         """
         Extracts and displays the relevant part of the script's docstring based on the current UI language,
@@ -1223,7 +1202,6 @@ class ScriptGUI(QMainWindow):
         """
         self._save_state_for_undo()
 
-        # --- (CORRECTED LOGIC START / 已修正的逻辑开始) ---
         # QListWidgetItem is not hashable, so we cannot use a set directly.
         # We must manually create a list of unique items.
         # QListWidgetItem 不可哈希，所以我们不能直接使用set。
@@ -1236,7 +1214,6 @@ class ScriptGUI(QMainWindow):
         for item in combined_list:
             if item not in items_to_delete:
                 items_to_delete.append(item)
-        # --- (CORRECTED LOGIC END / 已修正的逻辑结束) ---
 
         if items_to_delete:
             # If any items are marked, remove them.
@@ -1384,7 +1361,6 @@ class ScriptGUI(QMainWindow):
         # Delete/Backspace to remove selected and/or checked items
         # Delete/Backspace键移除被选中和/或被勾选的项目
         if self.path_list_widget.hasFocus() and (event.key() == Qt.Key.Key_Delete or event.key() == Qt.Key.Key_Backspace):
-            # --- (CORRECTED LOGIC START / 已修正的逻辑开始) ---
             # Get the union of selected and checked items manually, because QListWidgetItem is not hashable.
             # 手动获取选中和勾选项目的并集，因为QListWidgetItem不可哈希。
             selected_items = self.path_list_widget.selectedItems()
@@ -1395,7 +1371,6 @@ class ScriptGUI(QMainWindow):
             for item in combined_list:
                 if item not in items_to_delete:
                     items_to_delete.append(item)
-            # --- (CORRECTED LOGIC END / 已修正的逻辑结束) ---
 
             if items_to_delete:
                 self._save_state_for_undo()
@@ -1420,8 +1395,6 @@ class ScriptGUI(QMainWindow):
         self.console.insertPlainText(text)
         self.console.ensureCursorVisible()
 
-    # +++ 1. 粘贴这个全新的方法 +++
-    # +++ 全新版本：在GUI层处理浮点数到整数的映射 +++
     def _update_progress_display(self, current_float, max_float, description):
         """
         Updates the progress bar by mapping float progress values to an integer scale.
@@ -1451,7 +1424,6 @@ class ScriptGUI(QMainWindow):
         if not self.current_script_path:
             QMessageBox.warning(self, lang['warn_select_script_title'], lang['warn_select_script_msg']); return
 
-        # --- (NEW LOGIC START / 新逻辑开始) ---
         # First, get the list of all checked items.
         # 首先，获取所有被勾选项目的列表。
         checked_items = self._get_checked_items()
@@ -1465,7 +1437,6 @@ class ScriptGUI(QMainWindow):
             # If no items are checked, process ALL items in the list.
             # 如果没有项目被勾选，则处理列表中的所有项目。
             paths = [self.path_list_widget.item(i).text() for i in range(self.path_list_widget.count())]
-        # --- (NEW LOGIC END / 新逻辑结束) ---
 
         if not paths:
             QMessageBox.warning(self, lang['warn_no_paths_title'], lang['warn_no_paths_msg']); return
@@ -1508,7 +1479,6 @@ class ScriptGUI(QMainWindow):
         self.run_button.setEnabled(False)
         self.statusBar().showMessage(lang['status_running'])
         self.tabs.setCurrentWidget(self.terminal) # Switch to terminal tab on run / 运行时切换到终端选项卡
-        # +++ 2. 在 _run_script 的末尾，启动线程前，添加以下代码 +++
         self.progress_bar.hide()
         self.progress_label.hide()
         self.progress_bar.setValue(0)
@@ -1519,7 +1489,6 @@ class ScriptGUI(QMainWindow):
         self.script_executor = ScriptExecutor(command)
         self.script_executor.output_updated.connect(self._append_to_console) # Also send to simple console / 也发送到简单控制台
         self.script_executor.output_updated.connect(self.terminal.append_output) # Send to enhanced terminal / 发送到增强型终端
-        # +++ 在这里添加这行新的连接 +++
         self.script_executor.progress_updated.connect(self._update_progress_display)
         self.script_executor.process_finished.connect(self._on_script_finished)
         self.script_executor.start()
@@ -1554,12 +1523,11 @@ class ScriptGUI(QMainWindow):
         Executes a system command in the terminal if no script is running.
         如果没有脚本正在运行，则在终端中执行系统命令。
         """
-            # --- (NEW) Handle empty Enter press when no script is running ---
-        # --- (新) 处理无脚本运行时按下的空Enter ---
+        # (NEW) Handle empty Enter press when no script is running
+        # (新) 处理无脚本运行时按下的空Enter
         if not command_str.strip():
             self.terminal.append_output(f"\n{self.terminal.prompt_label.text()} ")
             return
-        # --- (End of new logic) ---
     
         if command_str.lower() == 'exit':
             self.close()
