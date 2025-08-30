@@ -271,6 +271,7 @@ print(f"要处理的文件列表是: {args.files}")
 A: 这是一个已知问题。目前，主题功能的工作方式如下：“跟随系统”选项可以在程序启动时正确应用您当前的系统主题（亮色或暗色）。但是，如果您在程序运行时切换系统主题，本工具需要**重启**才能应用新主题。直接点击“浅色模式”或“深色模式”按钮可能无法立即生效。我们正在努力在未来的版本中修复此问题。
 
 **Q: 手动参数的格式是什么？`--name value` 还是 `--name=value`？**
+
 A: **两种都支持，但我们推荐使用`--name value`（空格分隔）**。这是最通用、最标准的命令行格式。
 
 **Q: 我启动`main.py`时，程序闪退，并提示DLL加载失败，该怎么办？**
@@ -584,6 +585,7 @@ print(f"The list of files to process is: {args.files}")
 A: This is a known issue. Currently, the theme functionality works as follows: The "Follow System" option correctly applies your current system theme (light or dark) upon application startup. However, if you change your system theme while the application is running, the toolkit needs to be **restarted** to apply the new theme. Directly clicking the "Light Mode" or "Dark Mode" buttons may not work as expected. We are working on fixing this in a future release.
 
 **Q: What is the format for manual parameters? `--name value` or `--name=value`?**
+
 A: **Both are supported, but we recommend using `--name value` (space-separated)**. This is the most common and standard command-line format.
 
 **Q: When I run `main.py`, the program crashes with a DLL loading error. What should I do?**
