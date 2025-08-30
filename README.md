@@ -47,22 +47,24 @@ python3 --version
 
 ### 第二步：下载核心文件
 
-1.  从本仓库下载最重要的两个部分：
+1.  从本仓库下载最重要的三个部分：
     *   主程序文件: `main.py`
-    *   任务脚本文件夹: `scripts` (里面可能包含一些示例脚本，如`文档页数统计器.py`)
+    *   任务脚本文件夹: `scripts`
+    *   **UI文本文件: `ui_texts.json`**（界面多语言文本配置，必须和 main.py 在同一目录，本仓库已自带）
 
 2.  将它们放在你电脑的任意位置，但**必须保持以下文件夹结构**：
 
     ```
     你的工作区/
     ├── main.py          (主程序)
+    ├── ui_texts.json    (界面文本配置文件)
     └── scripts/         (存放所有任务脚本的文件夹)
         └── 任务脚本1.py
         └── 任务脚本2.py
         ...
     ```
 
-    > **警告**: `main.py` 和 `scripts` 文件夹必须位于同一级目录，否则程序将无法找到任何任务脚本！
+> **警告**: `main.py`、`ui_texts.json` 和 `scripts` 文件夹必须位于同一级目录，否则程序将无法找到界面文本或任务脚本！
 
 ### 第三步：运行工具箱
 
@@ -286,6 +288,10 @@ A: 请检查并确保：
 2.  `scripts`文件夹与`main.py`在同一个目录下。
 3.  `scripts`文件夹内至少有一个`.py`结尾的Python脚本文件。
 
+**Q: 如果丢失或损坏了 ui_texts.json 会怎样？**
+
+A: 程序将无法正常启动或界面文本会全部丢失。请确保 `main.py` 和 `ui_texts.json` 始终在同一文件夹，并且 json 文件内容完整。
+
 **Q: 如何让我的任务脚本支持交互，比如中途需要用户输入"yes"？**
 
 A: 只需在你的脚本代码中使用标准的`input()`函数即可。例如：
@@ -348,22 +354,24 @@ If it's not installed, please download and install it from the [official Python 
 
 ### Step 2: Download Core Files
 
-1.  Download the two most important parts from this repository:
+1.  Download the three most important parts from this repository:
     *   The main program file: `main.py`
-    *   The task script folder: `scripts` (which may contain example scripts like `Document Page Counter.py`)
+    *   The task script folder: `scripts`
+    *   **UI text file: `ui_texts.json`** (provides all GUI multi-language text, must be in the same directory as `main.py`)
 
 2.  Place them anywhere on your computer, but **you must maintain the following folder structure**:
 
     ```
     Your-Workspace/
     ├── main.py          (The main program)
+    ├── ui_texts.json    (UI text config file)
     └── scripts/         (Folder for all task scripts)
         └── Task-Script-1.py
         └── Task-Script-2.py
         ...
     ```
 
-    > **Warning**: `main.py` and the `scripts` folder must be in the same directory, otherwise the program will not find any task scripts!
+> **Warning**: `main.py`, `ui_texts.json`, and the `scripts` folder must all be in the same directory, otherwise the program will not find the UI text or any task scripts!
 
 ### Step 3: Run the Toolkit
 
@@ -592,6 +600,10 @@ A: Please check and ensure that:
 1.  A folder named `scripts` exists.
 2.  The `scripts` folder is in the same directory as `main.py`.
 3.  There is at least one Python script file ending in `.py` inside the `scripts` folder.
+
+**Q: What if ui_texts.json is missing or corrupted?**
+
+A: The program will not start correctly or all UI text will be missing. Please make sure `main.py` and `ui_texts.json` are always in the same folder, and the JSON file is complete and valid.
 
 **Q: How can I make my task script interactive, for example, requiring the user to type "yes" midway?**
 
