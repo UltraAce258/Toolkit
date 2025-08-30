@@ -5,6 +5,7 @@ import sys
 import os
 import re
 import glob
+import json
 import shlex
 import platform
 import subprocess
@@ -35,87 +36,11 @@ def resource_path(relative_path):
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
-# Constants / 全局常量 
-# UI text for different languages / 不同语言的界面文本
-UI_TEXTS = {
-    'zh': {
-        'window_title': "奥创王牌工具箱 - 用户: UltraAce258",
-        'available_scripts': "可用脚本:",
-        'script_info': "脚本介绍:",
-        'path_list_label': "文件/文件夹列表 (支持拖放、复选框、双击编辑):",
-        'run_button': "执行脚本",
-        'remove_selected_button': "移除选中项",
-        'remove_all_button': "清空所有",
-        'browse_files_button': "添加文件(可多选)",
-        'browse_dir_button': "添加文件夹(可多选)",
-        'params_label': "手动参数:",
-        'params_placeholder': "输入额外的手动参数",
-        'output_label': "输出:",
-        'stdout_tab': "标准输出",
-        'terminal_tab': "增强型终端",
-        'status_ready': "就绪",
-        'status_running': "脚本执行中...",
-        'terminal_welcome': "欢迎使用增强型终端\n",
-        'switch_lang_button': "切换语言 (Switch Language)",
-        'refresh_button_tooltip': "刷新脚本列表",
-        'info_no_docstring': "此脚本没有提供文档字符串。",
-        'info_read_error': "读取脚本信息时出错: ",
-        'warn_select_script_title': "警告",
-        'warn_select_script_msg': "请先选择一个脚本",
-        'warn_no_paths_title': "警告",
-        'warn_no_paths_msg': "请先添加至少一个文件或文件夹",
-        'script_finished_msg': "\n脚本执行完成，退出代码: {exit_code}",
-        'undo_stack_empty': "没有可撤销的操作",
-        'redo_stack_empty': "没有可重做的操作",
-        'select_all': "勾选全部",
-        'deselect_all': "取消选择",
-        'prefs_menu': "偏好设置(&P)",
-        'theme_menu': "主题",
-        'theme_light': "浅色模式",
-        'theme_dark': "深色模式",
-        'theme_system': "跟随系统",
-        'dynamic_params_label': "可视化参数:"
-    },
-    'en': {
-        'window_title': "UltraAce Toolkit - User: UltraAce258",
-        'available_scripts': "Available Scripts:",
-        'script_info': "Script Info:",
-        'path_list_label': "File/Folder List (Drag-drop, Checkbox, Double-click to edit):",
-        'run_button': "Run Script",
-        'remove_selected_button': "Remove Selected",
-        'remove_all_button': "Clear All",
-        'browse_files_button': "Add Files (Multi-select)",
-        'browse_dir_button': "Add Folders (Multi-select)",
-        'params_label': "Manual Parameters:",
-        'params_placeholder': "Enter additional manual parameters",
-        'output_label': "Output:",
-        'stdout_tab': "Standard Output",
-        'terminal_tab': "Enhanced Terminal",
-        'status_ready': "Ready",
-        'status_running': "Script running...",
-        'terminal_welcome': "Welcome to the Enhanced Terminal\n",
-        'switch_lang_button': "Switch Language (切换语言)",
-        'refresh_button_tooltip': "Refresh script list",
-        'info_no_docstring': "This script does not provide a docstring.",
-        'info_read_error': "Error reading script info: ",
-        'warn_select_script_title': "Warning",
-        'warn_select_script_msg': "Please select a script first.",
-        'warn_no_paths_title': "Warning",
-        'warn_no_paths_msg': "Please add at least one file or folder.",
-        'script_finished_msg': "\nScript finished with exit code: {exit_code}",
-        'undo_stack_empty': "Nothing to undo",
-        'redo_stack_empty': "Nothing to redo",
-        'select_all': "Select All",
-        'deselect_all': "Deselect All",
-        'prefs_menu': "Preferences(&P)",
-        'theme_menu': "Theme",
-        'theme_light': "Light Mode",
-        'theme_dark': "Dark Mode",
-        'theme_system': "Follow System",
-        'dynamic_params_label': "Visual Parameters:"
-    }
-}
-
+# UI文本读取函数 / UI Text Loading Function
+def load_ui_texts(json_path):
+    with open(json_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+    
 class ScriptExecutor(QThread):
     """
     Executes a script in a separate thread to keep the GUI responsive.
@@ -692,6 +617,21 @@ class ScriptGUI(QMainWindow):
         
         return panel
 
+    def _dynamic_params_resize_event(self, event):
+        # 获取参数区当前宽度
+        total_width = self.dynamic_params_group.width()
+        # 设1/3为单控件最大宽度，设置一个最小宽度防止太窄
+        max_param_width = max(int(total_width / 3), 180)
+        # 遍历所有动态参数控件，设置最大宽度
+        for widget in self.dynamic_param_widgets:
+            widget.setMaximumWidth(max_param_width)
+        # 保持原有resizeEvent行为
+        QWidget.resizeEvent(self.dynamic_params_group, event)
+
+    # 绑定新的resizeEvent
+        self.dynamic_params_group.resizeEvent = self._dynamic_params_resize_event.__get__(self.dynamic_params_group)
+
+
     def _create_actions(self):
         """
         Creates global actions and shortcuts (e.g., Undo, Redo).
@@ -1083,6 +1023,11 @@ class ScriptGUI(QMainWindow):
                 col += 1
         
         self.dynamic_params_group.setVisible(True)
+        if self.dynamic_param_widgets:
+            total_width = self.dynamic_params_group.width()
+            max_param_width = max(int(total_width / 3), 180)
+            for widget in self.dynamic_param_widgets:
+                widget.setMaximumWidth(max_param_width)
 
     def _update_script_info_display(self):
         """
@@ -1606,6 +1551,7 @@ def _get_best_font_name():
     else: return "WenQuanYi Micro Hei"
 
 if __name__ == "__main__":
+    UI_TEXTS = load_ui_texts(resource_path("ui_texts.json"))
     app = QApplication(sys.argv)
     app.setFont(QFont(_get_best_font_name(), 10))
     scripts_directory = resource_path("scripts")
