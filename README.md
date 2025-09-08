@@ -90,7 +90,7 @@ python main.py
 
 1.  **选择脚本**: 在程序窗口左侧的“可用脚本”列表中，点击一个你想运行的脚本（例如“文档页数统计器”）。
 2.  **添加文件**: 直接从你的电脑桌面或文件夹中，将一个或多个文件拖拽到程序窗口中。
-3.  **执行**: 点击窗口右下角那个最大、最显眼的蓝色按钮“执行脚本”。
+3.  **执行**: 点击窗口右下角的“执行脚本”按钮。如果任务耗时过长，旁边会出现一个红色的“停止脚本”按钮，可以随时中止任务。
 4.  **查看结果**: 程序会自动切换到“增强型终端”选项卡，你可以在这里看到脚本运行的全部过程和最终结果。
 
 恭喜你！你已经成功地使用了奥创王牌工具箱。
@@ -128,7 +128,12 @@ python main.py
 
 *   **可视化参数**: 当你选择一个脚本后，这里会自动出现为该脚本定制的配置选项。你无需知道它们背后对应的命令行参数是什么，只需像填写问卷一样操作即可。
 *   **手动参数**: 如果你需要输入一些临时的、或者脚本并未提供可视化界面的高级参数，可以在这里手动填写。格式与标准命令行完全一致（例如 `-v --output "my file.txt"`）。
+  
+#### 执行与停止按钮
 
+*   **执行脚本**: 配置好参数和文件列表后，点击此按钮开始执行任务。在脚本运行时，此按钮会被禁用。
+*   **停止脚本**: 当脚本开始运行后，此按钮会变为可用状态，并以红色高亮显示。点击它可以立即强制终止当前正在运行的脚本，适用于任务卡死或需要提前结束的场景。
+  
 #### 过程与结果
 
 *   **进度条**: 当执行一个支持进度报告的脚本时，一个可视化的进度条会自动出现在“执行”按钮下方。它会实时显示任务的完成度、百分比和当前正在进行的操作，让你对耗时任务的状况了如指掌。
@@ -399,7 +404,7 @@ If you prefer using a code editor, this is also a highly recommended method:
 
 1.  **Select a Script**: In the "Available Scripts" list on the left side of the program window, click on a script you want to run (e.g., "Document Page Counter").
 2.  **Add Files**: Drag one or more files from your desktop or a folder directly into the program window.
-3.  **Execute**: Click the largest and most prominent blue button, "Run Script," in the bottom right.
+3.  **Execute**: Click the "Run Script" button in the bottom right. If a task is running, a red "Stop Script" button will appear next to it, allowing you to terminate the task at any time.
 4.  **View Results**: The program will automatically switch to the "Enhanced Terminal" tab, where you can see the entire execution process and the final result of the script.
 
 Congratulations! You have successfully used the UltraAce Toolkit.
@@ -442,6 +447,11 @@ Every feature of the toolkit is designed to enhance your efficiency. Understandi
 *   **Visual Parameters**: When you select a script, custom configuration options for that script will automatically appear here. You don't need to know the underlying command-line arguments; just fill it out like a form.
 *   **Manual Parameters**: If you need to input temporary or advanced parameters that don't have a visual interface, you can type them here. The format is identical to the standard command line (e.g., `-v --output "my file.txt"`).
 
+#### Run and Stop Buttons
+
+*   **Run Script**: After configuring parameters and the file list, click this button to start the task. This button will be disabled while a script is running.
+*   **Stop Script**: This button becomes enabled and highlighted in red once a script begins to run. Clicking it will immediately terminate the currently running script, which is useful if a task hangs or you need to end it prematurely.
+  
 #### Process and Results
 
 *   **Progress Bar**: When running a script that supports progress reporting, a visual progress bar will automatically appear below the "Run" button. It shows the task's completion percentage and a description of the current operation in real-time, keeping you informed about long-running tasks.
