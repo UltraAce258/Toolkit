@@ -631,4 +631,4 @@ When the script reaches this point, the GUI's "Enhanced Terminal" will automatic
 
 ---
 
-*Documentation last updated: 2025-08-11. Authored by @UltraAce258, written with Copilot.*
+*Documentation last updated: 2025-09-08. Authored by @UltraAce258, written with Copilot.*
