@@ -312,6 +312,8 @@ class ScriptGUI(QMainWindow):
         self.dynamic_param_widgets = []
         self.progress_bar = None
         self.progress_label = None
+        self.progress_label = None
+        self.stop_button = None # 新增：为停止按钮添加实例变量
         
         self.original_palette = QApplication.instance().palette()
         
@@ -582,13 +584,25 @@ class ScriptGUI(QMainWindow):
         params_layout.addWidget(self.script_params)
         layout.addLayout(params_layout)
         
-        # Run button / 执行按钮
+        # Run and Stop buttons / 执行与停止按钮
+        run_stop_layout = QHBoxLayout()
+        run_stop_layout.setSpacing(10) # 设置两个按钮之间的空隙为10像素
+
+        # 执行按钮
         self.run_button = QPushButton()
         self.run_button.clicked.connect(self._run_script)
         self.run_button.setEnabled(False)
         self.run_button.setStyleSheet("QPushButton { font-weight: bold; font-size: 14pt; padding: 8px; min-height: 40px; }")
-        layout.addWidget(self.run_button)
-        # Progress Bar Section / 进度条部分
+        
+        # 新增：停止按钮
+        self.stop_button = QPushButton()
+        self.stop_button.clicked.connect(self._stop_script)
+        self.stop_button.setEnabled(False) # 初始时禁用
+        self.stop_button.setStyleSheet("QPushButton { font-weight: bold; font-size: 14pt; padding: 8px; min-height: 40px; color: #D32F2F; }") # 使用红色以示区别
+
+        run_stop_layout.addWidget(self.run_button)
+        run_stop_layout.addWidget(self.stop_button)
+        layout.addLayout(run_stop_layout) # 将布局添加到主布局中        # Progress Bar Section / 进度条部分
         self.progress_bar = QProgressBar()
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setRange(0, 100)
@@ -662,6 +676,8 @@ class ScriptGUI(QMainWindow):
         self.script_info_label.setText(lang['script_info'])
         self.path_list_label.setText(lang['path_list_label'])
         self.run_button.setText(lang['run_button'])
+        self.run_button.setText(lang['run_button'])
+        self.stop_button.setText(lang.get('stop_button', 'Stop Script')) # 新增：设置停止按钮的文本
         self.browse_files_button.setText(lang['browse_files_button'])
         self.browse_dir_button.setText(lang['browse_dir_button'])
         self.params_label.setText(lang['params_label'])
@@ -704,7 +720,7 @@ class ScriptGUI(QMainWindow):
         self.script_info.clear()
         self.current_script_path = None
         self.run_button.setEnabled(False)
-        self._clear_dynamic_params_ui()
+        self.stop_button.setEnabled(True) # 新增：脚本运行时启用停止按钮        self._clear_dynamic_params_ui()
         self.load_scripts()
         self.statusBar().showMessage(UI_TEXTS[self.current_lang]['status_ready'], 2000)
 
@@ -1438,6 +1454,24 @@ class ScriptGUI(QMainWindow):
         self.script_executor.process_finished.connect(self._on_script_finished)
         self.script_executor.start()
 
+    def _stop_script(self):
+        """
+        Stops the currently running script executor thread.
+        停止当前正在运行的脚本执行器线程。
+        """
+        if self.script_executor and self.script_executor.isRunning():
+            lang = UI_TEXTS[self.current_lang]
+            # 终止进程
+            self.script_executor.terminate()
+            
+            # 在控制台显示消息
+            stop_msg = f"\n--- {lang.get('script_stopped_msg', 'Script execution stopped by user.')} ---\n"
+            self._append_to_console(stop_msg)
+            self.terminal.append_output(stop_msg)
+            
+            # 手动调用完成函数来重置UI状态
+            self._on_script_finished(-1) # 使用-1表示被用户中断
+            
     def _on_script_finished(self, exit_code):
         """
         Handles cleanup and UI updates after the script finishes.
@@ -1448,7 +1482,7 @@ class ScriptGUI(QMainWindow):
         self._append_to_console(msg)
         self.terminal.append_output(msg)
         self.run_button.setEnabled(True)
-        self.statusBar().showMessage(lang['status_ready'])
+        self.stop_button.setEnabled(False) # 新增：脚本结束后禁用停止按钮        self.statusBar().showMessage(lang['status_ready'])
         self.progress_bar.hide()
         self.progress_label.hide()
         self.script_executor = None
