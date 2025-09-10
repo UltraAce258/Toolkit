@@ -262,7 +262,23 @@ print(f"要处理的文件列表是: {args.files}")
         print(f"[PROGRESS] {total_files} / {total_files} | 全部处理完成！", flush=True)
         ```
     *   **重要提示**: 任何以`[PROGRESS]`开头的打印输出都将被GUI**拦截**并用于更新进度条，**不会显示**在终端日志中。所有其他`print`输出则会照常显示。请务必在进度`print`语句中加入`flush=True`，以保证进度信息被立即发送。
+      
+### 第五步：遵循标准的输出规范 (新)
 
+为了给用户提供统一、可预测的体验，所有会生成新文件的脚本都应遵循“上下文感知输出”(Context-Aware Output)逻辑。这能确保无论用户如何操作，文件系统都能保持整洁。
+
+*   **场景一：处理单个文件**
+    *   **规则**：生成的新文件应直接保存在**原文件的旁边**。
+    *   **命名**：建议在原文件名的基础上添加一个描述性后缀，例如 `原始文件名_formatted.txt` 或 `原始文件名_extracted.txt`。
+
+*   **场景二：处理来自同一文件夹的多个文件**
+    *   **规则**：应在这些文件共同的源文件夹内，创建一个**统一的输出子文件夹**。
+    *   **命名**：子文件夹建议命名为 `功能名_OutputType`，例如 `格式化文本_Formatted_Text`。所有生成的文件将以其**原始文件名**保存在此子文件夹内。
+
+*   **场景三：处理来自不同文件夹的多个文件**
+    *   **规则**：应在工具箱主程序所在的目录（即当前工作目录）下，创建一个**统一的输出文件夹**。
+    *   **命名**：文件夹命名规则同上（如 `提取的文本_Extracted_Text`）。所有生成的文件同样以其**原始文件名**保存在这里。
+      
 ## 🗺️ 蓝图与未来计划
 
 *   **功能完善**: 修复所有已知问题，包括动态主题切换。
@@ -582,6 +598,22 @@ print(f"The list of files to process is: {args.files}")
         ```
     *   **Important**: Any line printed to stdout that starts with `[PROGRESS]` will be **intercepted** by the GUI to update the progress bar and will **not be displayed** in the terminal log. All other `print` outputs will appear as usual. Be sure to include `flush=True` in your progress `print` statements to ensure the information is sent immediately.
 
+### Step 5: Follow Standard Output Conventions (New)
+
+To provide a consistent and predictable user experience, all scripts that generate new files should adhere to the "Context-Aware Output" logic. This ensures the user's file system remains clean and organized, regardless of the operation.
+
+*   **Scenario 1: Processing a Single File**
+    *   **Rule**: The new file should be saved directly **next to the original file**.
+    *   **Naming**: It is recommended to add a descriptive suffix to the original filename, such as `original-filename_formatted.txt` or `original-filename_extracted.txt`.
+
+*   **Scenario 2: Processing Multiple Files from the Same Folder**
+    *   **Rule**: A **unified output subfolder** should be created within their common source folder.
+    *   **Naming**: The subfolder should be named `Feature_OutputType`, for example, `Formatted_Text`. All generated files will be saved inside this subfolder with their **original filenames**.
+
+*   **Scenario 3: Processing Multiple Files from Different Folders**
+    *   **Rule**: A **unified output folder** should be created in the directory where the main toolkit program is located (the current working directory).
+    *   **Naming**: The folder naming convention is the same as above (e.g., `Extracted_Text`). All generated files will also be saved here with their **original filenames**.
+    
 ## 🗺️ Roadmap & Future Plans
 
 *   **Feature Completion**: Fix all known issues, including dynamic theme switching.
