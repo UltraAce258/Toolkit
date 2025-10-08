@@ -162,6 +162,10 @@ def extract_text_from_doc(file_path, lang):
         pythoncom.CoUninitialize()
         return text
     except Exception: return T("doc_only_windows", lang)
+    
+def extract_text_from_json(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return f.read()
 
 def extract_text_from_image(file_path, ocr_reader, lang):
     import numpy as np
@@ -183,7 +187,7 @@ def extract_text_from_image(file_path, ocr_reader, lang):
 
 # --- Main Logic ---
 def get_all_supported_files(paths, sort_by):
-    doc_exts = ['.pdf', '.docx', '.pptx', '.doc']
+    doc_exts = ['.pdf', '.docx', '.pptx', '.doc', '.json']
     img_exts = ['.jpg', '.jpeg', '.png', '.bmp', '.webp', '.heic', '.heif', '.raw', '.cr2', '.nef', '.arw', '.dng']
     supported_exts = doc_exts + img_exts
     files_to_process = set()
@@ -279,6 +283,7 @@ def main():
             elif ext in ['.docx']: text_content = extract_text_from_docx(p)
             elif ext in ['.pptx']: text_content = extract_text_from_pptx(p)
             elif ext in ['.doc']: text_content = extract_text_from_doc(p, lang)
+            elif ext in ['.json']: text_content = extract_text_from_json(p)
             elif ext in img_exts:
                 if ocr_reader: text_content = extract_text_from_image(p, ocr_reader, lang)
                 else: continue
