@@ -26,6 +26,7 @@ from PyQt6.QtGui import (
     QKeyEvent,
     QKeySequence,
     QPalette,
+    QTextCursor,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -986,8 +987,6 @@ class ScriptGUI(QMainWindow):
 
         将 *text* 追加到标准输出选项卡。
         """
-        from PyQt6.QtGui import QTextCursor
-
         cursor = self.console.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
         self.console.setTextCursor(cursor)

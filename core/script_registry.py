@@ -39,6 +39,10 @@ import subprocess
 import sys
 from typing import Any
 
+# Maximum seconds to wait for a script's --gui-schema response.
+# 等待脚本 --gui-schema 响应的最长秒数。
+_GUI_SCHEMA_TIMEOUT_SECONDS = 10
+
 
 # ------------------------------------------------------------------
 # Docstring extraction
@@ -141,7 +145,7 @@ def _try_gui_schema(script_path: str) -> list[dict[str, Any]] | None:
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=10,
+            timeout=_GUI_SCHEMA_TIMEOUT_SECONDS,
         )
         if result.returncode != 0:
             return None

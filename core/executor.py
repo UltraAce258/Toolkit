@@ -106,7 +106,7 @@ class ScriptExecutor(QThread):
                 continue
             if line.startswith("[PROGRESS]"):
                 try:
-                    payload = line[len("[PROGRESS]"):].strip()
+                    payload = line[10:].strip()  # len("[PROGRESS]") == 10
                     progress_part, description = payload.split("|", 1)
                     current_str, max_str = progress_part.split("/", 1)
                     current = float(current_str.strip())
