@@ -247,14 +247,14 @@ def resolve_runtime_device(preferred, lang):
     return "cuda" if _torch_cuda_available() else "cpu"
 
 
-def get_ocr_reader(lang, ocr_device):
+def get_ocr_reader(ui_lang, ocr_device):
     try:
         import easyocr
-        resolved = resolve_runtime_device(ocr_device, lang)
-        print(T("ocr_init", lang))
+        resolved = resolve_runtime_device(ocr_device, ui_lang)
+        print(T("ocr_init", ui_lang))
         reader = easyocr.Reader(['ch_sim', 'en'], gpu=(resolved == "cuda"))
-        print(T("ocr_ready", lang))
-        print(T("ocr_using", lang, device=resolved))
+        print(T("ocr_ready", ui_lang))
+        print(T("ocr_using", ui_lang, device=resolved))
         return reader
     except Exception:
         return None
@@ -271,7 +271,8 @@ def ensure_ffmpeg(lang):
 def format_srt_time(seconds):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
-    return f"{int(h):02d}:{int(m):02d}:{int(s):02d},{int((seconds - int(s)) * 1000):03d}"
+    milliseconds = int((seconds % 1) * 1000)
+    return f"{int(h):02d}:{int(m):02d}:{int(s):02d},{milliseconds:03d}"
 
 
 def segments_to_srt(segments):
@@ -302,7 +303,7 @@ def _run_transcribe(model, audio_path, mode):
             start=float(seg.start),
             end=float(seg.end),
             text=str(seg.text).strip(),
-            no_speech_prob=float(getattr(seg, "no_speech_prob", 1.0)),
+            no_speech_prob=float(getattr(seg, "no_speech_prob", 0.5)),
             lang=mode if mode in ("en", "zh") else "auto",
         )
         for seg in segments_generator
@@ -310,6 +311,14 @@ def _run_transcribe(model, audio_path, mode):
 
 
 def intelligent_merge(en_segments, zh_segments):
+    """Merge EN/ZH segment streams by overlap and no-speech probability.
+
+    Strategy:
+    - Find Chinese segments overlapping each English segment.
+    - If English no-speech probability is lower than average overlapping Chinese
+      no-speech probability, keep English; otherwise keep overlapping Chinese.
+    - Append remaining unmatched Chinese segments and sort by start time.
+    """
     final_segments = []
     zh_pool = list(zh_segments)
     for en_seg in en_segments:
@@ -330,20 +339,24 @@ def intelligent_merge(en_segments, zh_segments):
     return final_segments
 
 
-def extract_from_media(file_path, whisper_model, whisper_device, subtitle_mode, lang):
+def create_whisper_model(whisper_model, whisper_device, lang):
     from faster_whisper import WhisperModel
     resolved_device = resolve_runtime_device(whisper_device, lang)
+    # CUDA uses mixed int8/float16 for better throughput; CPU stays pure int8.
     compute_type = "int8_float16" if resolved_device == "cuda" else "int8"
-    model = WhisperModel(whisper_model, device=resolved_device, compute_type=compute_type)
+    return WhisperModel(whisper_model, device=resolved_device, compute_type=compute_type)
+
+
+def extract_from_media(file_path, whisper_model_obj, subtitle_mode, lang):
     audio_path = _extract_audio_for_whisper(file_path, lang)
     print(T("media_transcribing", lang))
     try:
         if subtitle_mode == "merge":
-            en_segments = _run_transcribe(model, audio_path, "en")
-            zh_segments = _run_transcribe(model, audio_path, "zh")
+            en_segments = _run_transcribe(whisper_model_obj, audio_path, "en")
+            zh_segments = _run_transcribe(whisper_model_obj, audio_path, "zh")
             merged = intelligent_merge(en_segments, zh_segments)
             return "\n".join(seg.text for seg in merged), segments_to_srt(merged)
-        segments = _run_transcribe(model, audio_path, subtitle_mode)
+        segments = _run_transcribe(whisper_model_obj, audio_path, subtitle_mode)
         return "\n".join(seg.text for seg in segments), segments_to_srt(segments)
     finally:
         try:
@@ -427,6 +440,13 @@ def main():
 
     ocr_reader = get_ocr_reader(lang, args.ocr_device) if need_images else None
     media_runtime_ok = ensure_ffmpeg(lang) if need_media else True
+    whisper_model_obj = None
+    if need_media and media_runtime_ok:
+        try:
+            whisper_model_obj = create_whisper_model(args.whisper_model, args.whisper_device, lang)
+        except Exception as e:
+            print(T("media_fail", lang, e=e))
+            media_runtime_ok = False
 
     for i, file_path in enumerate(files_to_process):
         p = Path(file_path)
@@ -468,7 +488,7 @@ def main():
                     continue
                 try:
                     text_content, srt_content = extract_from_media(
-                        p, args.whisper_model, args.whisper_device, args.subtitle_mode, lang
+                        p, whisper_model_obj, args.subtitle_mode, lang
                     )
                     with open(subtitle_path, 'w', encoding='utf-8') as sf:
                         sf.write(srt_content)
