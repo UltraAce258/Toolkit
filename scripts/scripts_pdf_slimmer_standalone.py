@@ -94,7 +94,12 @@ class PdfObject:
 
 
 def install_and_import(*_args, **_kwargs):  # kept for script-registry parity
-    """Compatibility stub for the legacy dependency bootstrap helper."""
+    """Compatibility stub for legacy script-registry expectations.
+
+    Older Toolkit scripts expose an ``install_and_import`` helper, so this
+    no-op keeps the standalone script drop-in compatible without adding any
+    runtime dependency bootstrap logic.
+    """
     return None
 
 
@@ -382,17 +387,22 @@ def detect_pages_to_delete(page_lines: list[list[str]]) -> list[int]:
     for i in range(len(page_lines) - 1):
         current_lines = page_lines[i]
         next_lines = page_lines[i + 1]
-        if current_lines:
-            next_page_has_more_content = (
-                sum(len(s) for s in next_lines),
-                len(next_lines),
-            ) > (
-                sum(len(s) for s in current_lines),
-                len(current_lines),
-            )
-            if next_page_has_more_content and is_subset_fuzzy(current_lines, next_lines):
-                to_delete.append(i)
+        if current_lines and _next_page_has_more_content(current_lines, next_lines) and is_subset_fuzzy(
+            current_lines, next_lines
+        ):
+            to_delete.append(i)
     return to_delete
+
+
+def _next_page_has_more_content(current_lines: list[str], next_lines: list[str]) -> bool:
+    """Compare pages by total extracted text length, then by line count."""
+    return (
+        sum(len(s) for s in next_lines),
+        len(next_lines),
+    ) > (
+        sum(len(s) for s in current_lines),
+        len(current_lines),
+    )
 
 
 def _replace_count_and_kids(obj_body: bytes, count: int, kids: list[tuple[int, int]]) -> bytes:
@@ -553,7 +563,7 @@ def main() -> int:
 
             print(texts["analyzing"])
             slim_pdf(file_path, output_path, texts)
-        except (OSError, ValueError, zlib.error, binascii.Error, re.error, KeyError, IndexError) as exc:
+        except (OSError, ValueError, zlib.error, binascii.Error) as exc:
             print(texts["process_fail"].format(error=f"{type(exc).__name__}: {exc}"))
 
     print(texts["all_done"])
