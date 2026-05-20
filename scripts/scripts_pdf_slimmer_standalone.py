@@ -27,6 +27,7 @@ This script has no visual or manual optional parameters.
 from __future__ import annotations
 
 import argparse
+import binascii
 import base64
 import os
 import re
@@ -382,8 +383,12 @@ def detect_pages_to_delete(page_lines: list[list[str]]) -> list[int]:
         current_lines = page_lines[i]
         next_lines = page_lines[i + 1]
         if current_lines:
-            next_page_has_more_content = (sum(len(s) for s in next_lines) > sum(len(s) for s in current_lines)) or (
-                len(next_lines) > len(current_lines)
+            next_page_has_more_content = (
+                sum(len(s) for s in next_lines),
+                len(next_lines),
+            ) > (
+                sum(len(s) for s in current_lines),
+                len(current_lines),
             )
             if next_page_has_more_content and is_subset_fuzzy(current_lines, next_lines):
                 to_delete.append(i)
@@ -548,7 +553,7 @@ def main() -> int:
 
             print(texts["analyzing"])
             slim_pdf(file_path, output_path, texts)
-        except Exception as exc:  # noqa: BLE001
+        except (OSError, ValueError, zlib.error, binascii.Error, re.error, KeyError, IndexError) as exc:
             print(texts["process_fail"].format(error=f"{type(exc).__name__}: {exc}"))
 
     print(texts["all_done"])
