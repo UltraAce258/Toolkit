@@ -35,6 +35,8 @@ import sys
 import zlib
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
+
+
 SCRIPT_TEXTS = {
     "zh": {
         "init": "--- PDF重复页瘦身器（独立版）初始化 ---",
@@ -63,7 +65,7 @@ SCRIPT_TEXTS = {
         "all_done": "\n--- All tasks completed. ---",
     },
 }
-# English strings intentionally inherit any missing keys from the Chinese block
+# English values take precedence; any missing keys fall back to the Chinese block
 # so the runtime always has a complete message set.
 SCRIPT_TEXTS["en"] = {**SCRIPT_TEXTS["zh"], **SCRIPT_TEXTS["en"]}
 
@@ -302,7 +304,11 @@ def _is_pages_node(obj: PdfObject) -> bool:
 
 
 def _is_page_node(obj: PdfObject) -> bool:
-    return b"/Type /Page" in obj.body and b"/Type /Pages" not in obj.body and b"/Type/Pages" not in obj.body
+    return (
+        (b"/Type /Page" in obj.body or b"/Type/Page" in obj.body)
+        and b"/Type /Pages" not in obj.body
+        and b"/Type/Pages" not in obj.body
+    )
 
 
 def build_page_tree(
@@ -376,10 +382,10 @@ def detect_pages_to_delete(page_lines: list[list[str]]) -> list[int]:
         current_lines = page_lines[i]
         next_lines = page_lines[i + 1]
         if current_lines:
-            content_increased = (sum(len(s) for s in next_lines) > sum(len(s) for s in current_lines)) or (
+            next_page_has_more_content = (sum(len(s) for s in next_lines) > sum(len(s) for s in current_lines)) or (
                 len(next_lines) > len(current_lines)
             )
-            if content_increased and is_subset_fuzzy(current_lines, next_lines):
+            if next_page_has_more_content and is_subset_fuzzy(current_lines, next_lines):
                 to_delete.append(i)
     return to_delete
 
@@ -543,7 +549,7 @@ def main() -> int:
             print(texts["analyzing"])
             slim_pdf(file_path, output_path, texts)
         except Exception as exc:  # noqa: BLE001
-            print(texts["process_fail"].format(error=exc))
+            print(texts["process_fail"].format(error=f"{type(exc).__name__}: {exc}"))
 
     print(texts["all_done"])
     return 0
