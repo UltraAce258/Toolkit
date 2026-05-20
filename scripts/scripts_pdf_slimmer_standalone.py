@@ -63,6 +63,8 @@ SCRIPT_TEXTS = {
         "all_done": "\n--- All tasks completed. ---",
     },
 }
+# English strings intentionally inherit any missing keys from the Chinese block
+# so the runtime always has a complete message set.
 SCRIPT_TEXTS["en"] = {**SCRIPT_TEXTS["zh"], **SCRIPT_TEXTS["en"]}
 
 
@@ -89,6 +91,7 @@ class PdfObject:
 
 
 def install_and_import(*_args, **_kwargs):  # kept for script-registry parity
+    """Compatibility stub for the legacy dependency bootstrap helper."""
     return None
 
 
@@ -401,7 +404,6 @@ def _collect_updated_nodes(
         new_kids: list[tuple[int, int]] = []
         new_count = 0
         for kid in info["kids"]:
-            kid_obj = info["obj"] if kid == ref else None
             if kid in tree_info:
                 count = walk(kid)
                 if count > 0:
@@ -516,7 +518,7 @@ def main() -> int:
     parser.add_argument("--gui-mode", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
-    texts = SCRIPT_TEXTS.get(args.lang, SCRIPT_TEXTS["zh"])
+    texts = SCRIPT_TEXTS.get(args.lang, SCRIPT_TEXTS["en"])
     print(texts["init"])
 
     if not args.files:
