@@ -45,6 +45,7 @@ SCRIPT_TEXTS = {
         "start_processing": "\n--- 开始处理文件 ---",
         "processing_file": "\n[文件] {filename}",
         "skip_unsupported": "   - 跳过: 仅支持 .pdf。",
+        "missing_file": "   - 跳过: 文件不存在: {path}",
         "analyzing": "   - 正在分析内容...",
         "single_page": "   - 文件只有一页或为空，无需处理。",
         "no_redundancy": "   - 未发现可移除的冗余页面，已原样复制输出。",
@@ -58,6 +59,7 @@ SCRIPT_TEXTS = {
         "start_processing": "\n--- Starting processing ---",
         "processing_file": "\n[File] {filename}",
         "skip_unsupported": "   - Skipped: only .pdf is supported.",
+        "missing_file": "   - Skipped: file does not exist: {path}",
         "analyzing": "   - Analyzing content...",
         "single_page": "   - File has only one page or is empty; nothing to do.",
         "no_redundancy": "   - No removable redundant pages found; copied as-is.",
@@ -192,10 +194,7 @@ def _parse_filters(dict_part: bytes) -> list[str]:
     if not match:
         return filters
     token = match.group(1)
-    if token.startswith(b"["):
-        filters = re.findall(rb"/([A-Za-z0-9]+)", token)
-    else:
-        filters = re.findall(rb"/([A-Za-z0-9]+)", token)
+    filters = re.findall(rb"/([A-Za-z0-9]+)", token)
     return [f.decode("ascii", errors="ignore") for f in filters]
 
 
@@ -535,7 +534,7 @@ def slim_pdf(input_path: str, output_path: str, texts: dict[str, str]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Slim PDF files by removing redundant pages.")
     parser.add_argument("files", nargs="*", help="Paths to PDF files.")
-    parser.add_argument("--lang", type=str, default="en", choices=["zh", "en"], help=argparse.SUPPRESS)
+    parser.add_argument("--lang", type=str, default="en", choices=["zh", "en"], help=argparse.SUPPRESS)  # GUI-only
     parser.add_argument("--gui-mode", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
@@ -549,6 +548,7 @@ def main() -> int:
     print(texts["start_processing"])
     for file_path in args.files:
         if not os.path.exists(file_path):
+            print(texts["missing_file"].format(path=file_path))
             continue
 
         print(texts["processing_file"].format(filename=os.path.basename(file_path)))
