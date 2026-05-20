@@ -27,7 +27,6 @@ This script has no visual or manual optional parameters.
 from __future__ import annotations
 
 import argparse
-import binascii
 import base64
 import os
 import re
@@ -114,8 +113,11 @@ def normalize_text_lines(text: str) -> list[str]:
 
 
 def is_line_contained_fuzzy(line_a: str, lines_b: list[str], sim_threshold: float = 0.9) -> bool:
+    matcher = SequenceMatcher()
+    matcher.set_seq1(line_a)
     for line_b in lines_b:
-        if SequenceMatcher(None, line_a, line_b).ratio() >= sim_threshold:
+        matcher.set_seq2(line_b)
+        if matcher.ratio() >= sim_threshold:
             return True
         if len(line_b) > len(line_a) and line_b.startswith(line_a):
             return True
@@ -182,7 +184,10 @@ def _apply_filters(stream: bytes, filters: list[str]) -> bytes:
                 hex_data += b"0"
             data = bytes.fromhex(hex_data.decode("ascii"))
         elif flt == "ASCII85Decode":
-            data = base64.a85decode(data, adobe=True)
+            try:
+                data = base64.a85decode(data, adobe=True)
+            except Exception as exc:  # pragma: no cover - defensive wrapper
+                raise ValueError(f"Invalid ASCII85 stream: {exc}") from exc
         elif flt == "FlateDecode":
             data = zlib.decompress(data)
     return data
@@ -224,6 +229,11 @@ def extract_text_from_stream(raw: bytes) -> list[str]:
     if not raw:
         return []
     texts: list[str] = []
+    # Match PDF text-showing operators:
+    #   - TJ: array form containing literal strings, hex strings, and spacing
+    #   - Tj: single literal or hex string
+    # The nested array pattern handles the token shapes emitted by the PDFs
+    # processed by Toolkit.
     pattern = re.compile(
         rb"(\[(?:[^\[\]]|\[(?:[^\[\]]|\[[^\]]*\])*\])*\]|\((?:[^\\()]|\\.)*\)|<[^>]+>)\s*T[Jj]",
         re.S,
@@ -563,7 +573,7 @@ def main() -> int:
 
             print(texts["analyzing"])
             slim_pdf(file_path, output_path, texts)
-        except (OSError, ValueError, zlib.error, binascii.Error) as exc:
+        except (OSError, ValueError, zlib.error) as exc:
             print(texts["process_fail"].format(error=f"{type(exc).__name__}: {exc}"))
 
     print(texts["all_done"])
